@@ -1,0 +1,36 @@
+Q: addition of two numbers
+
+Covers:
+1) regular expressions
+2) function
+
+Sol:
+#!/bin/bash
+
+# Adding two numbers
+
+#Defining regular expression to match only numbers
+re="^[0-9]+$"
+
+if [ $# -ne 2 ]; then
+    echo "Usage: $0 <number1> <number2>"
+    exit 1
+fi
+
+function sum {
+    total=$(( $1 + $2 ))
+}
+
+
+#This Bash conditional checks whether both the first (`$1`) and second (`$2`) 
+#command-line arguments match a regular expression pattern stored in the variable `$re`. 
+#The `[[ ... ]]` is Bash’s advanced test command, and the `=~` operator is used for regular 
+#expression matching. 
+if [[ $1 =~ $re && $2 =~ $re ]]; then
+    sum $1 $2
+    echo "Sum of $1 and $2 is: $total"
+else
+    echo "Both arguments must be numbers."
+    exit 1
+fi
+
