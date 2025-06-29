@@ -1,3 +1,19 @@
-comm -23 <(cut -d' ' -f1 "$checksums1") <(cut -d' ' -f1 "$checksums2") | while read -r f; do
-  echo "Only in $dir1: $f"
-done
+Q: cover different arguments
+
+Covers:
+1) case
+
+Sol:
+#!/usr/bin/env bash
+
+set -eu
+
+main() {
+  case $# in
+    0) printf "%s" "Only one argument"; return 1 ;;
+    1) printf "%s" "now two arguments"; return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+main "$@"
