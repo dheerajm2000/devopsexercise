@@ -1,0 +1,27 @@
+Q: display all the files which are older then 10 days
+
+Sol:
+
+#!/bin/bash
+
+if [ $# -ne 1 ]; then
+    echo "Usage $0 <directory>"
+    exit 1
+fi
+
+[ ! -d "$1" ] && echo "$1 does not exist." && exit 1
+
+
+for object in "$1"/*; do 
+    if [ -f "$object" ]; then
+       #This Bash line checks whether there are any regular files inside the directory 
+       #specified by the variable `$object` that were last modified more than 10 days ago. The `find "$object" -type f -mtime +10` command searches for such files and outputs their paths. The output is then piped (`|`) to `grep -q .`, which quietly checks if there is any non-empty output (i.e., at least one matching file). If such a file exists, the condition is true and the commands inside the `then` block will execute. This is a common pattern for testing the presence of files meeting certain criteria without displaying their names.
+        if find "$object" -type f -mtime +10 | grep -q .; then
+            echo "FILE - $(basename "$object") is older than 10 days."
+        else
+            echo "FILE - $(basename "$object") is not older than 10 days."
+        fi
+    elif [ -d "$object" ]; then
+        echo "Directory -  $object"
+    fi
+done
