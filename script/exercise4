@@ -1,0 +1,3 @@
+comm -23 <(cut -d' ' -f1 "$checksums1") <(cut -d' ' -f1 "$checksums2") | while read -r f; do
+  echo "Only in $dir1: $f"
+done

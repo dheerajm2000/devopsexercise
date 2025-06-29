@@ -1,3 +1,113 @@
 Q: Create a script to take two arguments of directories and compare the directories
 
 Sol:
+
+#!/bin/bash
+
+# Check if two arguments are passed
+if [ "$#" -ne 2 ]; then
+  echo "Usage: $0 <dir1> <dir2>"
+  exit 1
+fi
+
+dir1="$1"
+dir2="$2"
+
+# Check if both are directories
+if [ ! -d "$dir1" ] || [ ! -d "$dir2" ]; then
+  echo "Both arguments must be directories."
+  exit 1
+fi
+
+echo "Comparing directories: $dir1 and $dir2"
+
+# Compare directory contents using diff and process
+diff_output=$(diff -r "$dir1" "$dir2")
+if [ $? -eq 0 ]; then
+  echo "Directories are identical."
+else
+  echo "Directories differ."
+  echo "Differences:"
+  echo "$diff_output"
+fi
+
+#Second way to compare using checksums
+#!/bin/bash
+
+# Check usage
+if [ "$#" -ne 2 ]; then
+  echo "Usage: $0 <dir1> <dir2>"
+  exit 1
+fi
+
+dir1="$1"
+dir2="$2"
+
+# Verify directories
+if [ ! -d "$dir1" ] || [ ! -d "$dir2" ]; then
+  echo "Both arguments must be valid directories."
+  exit 1
+fi
+
+# Normalize paths
+dir1=$(realpath "$dir1")
+dir2=$(realpath "$dir2")
+
+# Function to get checksums relative to root dir
+get_checksums() {
+  local root="$1"
+  find "$root" -type f | while read -r file; do
+    rel_path="${file#$root/}"
+    checksum=$(sha256sum "$file" | awk '{print $1}')
+    echo "$rel_path $checksum"
+  done | sort
+}
+
+# Get checksums for both directories
+checksums1=$(mktemp)
+checksums2=$(mktemp)
+
+get_checksums "$dir1" > "$checksums1"
+get_checksums "$dir2" > "$checksums2"
+
+# Compare the two
+echo "Comparing file checksums between:"
+echo " - $dir1"
+echo " - $dir2"
+echo
+
+
+
+#This shell script segment identifies files that are present in one directory but not in another, based on their checksums. Here’s how it works:
+
+- `cut -d' ' -f1 "$checksums1"` extracts the first field (typically the checksum hash) from each line of the file `$checksums1`, using a space as the delimiter.
+- The same operation is performed on `$checksums2`.
+- `<(...)` is process substitution, allowing the output of each `cut` command to be treated as a file input for the next command.
+- `comm -23` compares the two sorted lists of checksums. The `-2` and `-3` options suppress lines unique to the second file and lines common to both, so only lines unique to the first file are output.
+- The output (unique checksums from `$checksums1`) is piped into a `while read -r f` loop, which reads each checksum into the variable `f`.
+- For each unique checksum, the script prints a message indicating that the corresponding file is only in `$dir1`.
+
+This approach is useful for finding files that exist in one directory but not the other, based on their content rather than just their names.
+
+# Only in dir1
+comm -23 <(cut -d' ' -f1 "$checksums1") <(cut -d' ' -f1 "$checksums2") | while read -r f; do
+  echo "Only in $dir1: $f"
+done
+
+# Only in dir2
+comm -13 <(cut -d' ' -f1 "$checksums1") <(cut -d' ' -f1 "$checksums2") | while read -r f; do
+  echo "Only in $dir2: $f"
+done
+
+# In both but with different checksums
+comm -12 <(cut -d' ' -f1 "$checksums1") <(cut -d' ' -f1 "$checksums2") | while read -r f; do
+  sum1=$(grep "^$f " "$checksums1" | awk '{print $2}')
+  sum2=$(grep "^$f " "$checksums2" | awk '{print $2}')
+  if [ "$sum1" != "$sum2" ]; then
+    echo "Different content: $f"
+  fi
+done
+
+# Clean up
+rm "$checksums1" "$checksums2"
+
